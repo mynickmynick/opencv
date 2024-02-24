@@ -499,6 +499,7 @@ static SchedPtr pplScheduler;
 /* ================================   parallel_for_  ================================ */
 
 static void parallel_for_impl(const cv::Range& range, const cv::ParallelLoopBody& body, double nstripes); // forward declaration
+static void parallel_for_impl_dbg(const cv::Range& range, const cv::ParallelLoopBody& body, double nstripes); // forward declaration
 
 void parallel_for_(const cv::Range& range, const cv::ParallelLoopBody& body, double nstripes)
 {
@@ -522,6 +523,44 @@ void parallel_for_(const cv::Range& range, const cv::ParallelLoopBody& body, dou
         try
         {
             parallel_for_impl(range, body, nstripes);
+            flagNestedParallelFor = false;
+        }
+        catch (...)
+        {
+            flagNestedParallelFor = false;
+            throw;
+        }
+    }
+    else // nested parallel_for_() calls are not parallelized
+    {
+        CV_UNUSED(nstripes);
+        body(range);
+    }
+}
+
+
+void parallel_for_dbg(const cv::Range& range, const cv::ParallelLoopBody& body, double nstripes)
+{
+#ifdef OPENCV_TRACE
+    CV__TRACE_OPENCV_FUNCTION_NAME_("parallel_for", 0);
+    CV_TRACE_ARG_VALUE(range_start, "range.start", (int64)range.start);
+    CV_TRACE_ARG_VALUE(range_end, "range.end", (int64)range.end);
+    CV_TRACE_ARG_VALUE(nstripes, "nstripes", (int64)nstripes);
+#endif
+
+    CV_INSTRUMENT_REGION_MT_FORK();
+    if (range.empty())
+        return;
+
+    static std::atomic<bool> flagNestedParallelFor(false);
+    bool isNotNestedRegion = !flagNestedParallelFor.load();
+    if (isNotNestedRegion)
+        isNotNestedRegion = !flagNestedParallelFor.exchange(true);
+    if (isNotNestedRegion)
+    {
+        try
+        {
+            parallel_for_impl_dbg(range, body, nstripes);
             flagNestedParallelFor = false;
         }
         catch (...)
@@ -598,6 +637,92 @@ static void parallel_for_impl(const cv::Range& range, const cv::ParallelLoopBody
 #elif defined HAVE_CONCURRENCY
 
         if(!pplScheduler || pplScheduler->Id() == Concurrency::CurrentScheduler::Id())
+        {
+            Concurrency::parallel_for(stripeRange.start, stripeRange.end, pbody);
+        }
+        else
+        {
+            pplScheduler->Attach();
+            Concurrency::parallel_for(stripeRange.start, stripeRange.end, pbody);
+            Concurrency::CurrentScheduler::Detach();
+        }
+
+#elif defined HAVE_PTHREADS_PF
+
+        parallel_for_pthreads(pbody.stripeRange(), pbody, pbody.stripeRange().size());
+
+#else
+
+#error You have hacked and compiling with unsupported parallel framework
+
+#endif
+
+        ctx.finalize();  // propagate exceptions if exists
+        return;
+#endif // CV_PARALLEL_FRAMEWORK
+    }
+
+    body(range);
+}
+
+
+static void parallel_for_impl_dbg(const cv::Range& range, const cv::ParallelLoopBody& body, double nstripes)
+{
+    using namespace cv::parallel;
+    if ((numThreads < 0 || numThreads > 1) && range.end - range.start > 1)
+    {
+        ParallelLoopBodyWrapperContext ctx(body, range, nstripes);
+        ProxyLoopBody pbody(ctx);
+        cv::Range stripeRange = pbody.stripeRange();
+        if (stripeRange.end - stripeRange.start == 1)
+        {
+            body(range);
+            return;
+        }
+
+        std::shared_ptr<ParallelForAPI>& api = getCurrentParallelForAPI();
+        if (api)
+        {
+            CV_CheckEQ(stripeRange.start, 0, "");
+            api->parallel_for(stripeRange.end, parallel_for_cb, (void*)&pbody);
+            ctx.finalize();  // propagate exceptions if exists
+            return;
+        }
+
+#ifdef CV_PARALLEL_FRAMEWORK
+#if defined HAVE_TBB
+
+#if TBB_INTERFACE_VERSION >= 8000
+        tbbArena.execute(pbody);
+#else
+        pbody();
+#endif
+
+#elif defined HAVE_HPX
+        pbody();
+
+#elif defined HAVE_OPENMP
+
+#pragma omp parallel for schedule(dynamic) num_threads(numThreads > 0 ? numThreads : numThreadsMax)
+        for (int i = stripeRange.start; i < stripeRange.end; ++i)
+        {
+            int total_td = omp_get_num_threads();
+            printf("iteration \t\t%d\t\t omp_get_num_threads  omp_get_max_threads  omp_get_thread_num   %d   %d   %d\n", i, total_td, omp_get_max_threads(), omp_get_thread_num());
+            pbody(Range(i, i + 1));
+        }
+
+#elif defined HAVE_GCD
+
+        dispatch_queue_t concurrent_queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+        dispatch_apply_f(stripeRange.end - stripeRange.start, concurrent_queue, &pbody, block_function);
+
+#elif defined WINRT
+
+        Concurrency::parallel_for(stripeRange.start, stripeRange.end, pbody);
+
+#elif defined HAVE_CONCURRENCY
+
+        if (!pplScheduler || pplScheduler->Id() == Concurrency::CurrentScheduler::Id())
         {
             Concurrency::parallel_for(stripeRange.start, stripeRange.end, pbody);
         }

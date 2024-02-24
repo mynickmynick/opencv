@@ -184,7 +184,7 @@ GAPI_OCL_KERNEL(GOCLCanny, cv::gapi::imgproc::GCanny)
 {
     static void run(const cv::UMat& in, double thr1, double thr2, int apSize, bool l2gradient, cv::UMat &out)
     {
-        cv::Canny(in, out, thr1, thr2, apSize, l2gradient);
+        cv::Canny(in, out, thr1, thr2, apSize, l2gradient, false);
     }
 };
 

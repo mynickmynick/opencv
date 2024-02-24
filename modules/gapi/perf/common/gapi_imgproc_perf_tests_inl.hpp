@@ -720,7 +720,7 @@ PERF_TEST_P_(CannyPerfTest, TestPerformance)
 
     // OpenCV code /////////////////////////////////////////////////////////////
     {
-        cv::Canny(in_mat1, out_mat_ocv, thrLow, thrUp, apSize, l2gr);
+        cv::Canny(in_mat1, out_mat_ocv, thrLow, thrUp, apSize, l2gr, false);
     }
 
     // G-API code //////////////////////////////////////////////////////////////
@@ -1915,7 +1915,7 @@ PERF_TEST_P_(BottleneckKernelsConstInputPerfTest, TestPerformance)
     cv::resize(in_mat1, cvvga, cv::Size(), fx, fy);
     cv::cvtColor(cvvga, cvgray, cv::COLOR_BGR2GRAY);
     cv::blur(cvgray, cvblurred, cv::Size(3, 3));
-    cv::Canny(cvblurred, out_mat_ocv, 32, 128, 3);
+    cv::Canny(cvblurred, out_mat_ocv, 32, 128, 3, false);
 
     cv::GMat in;
     cv::GMat vga = cv::gapi::resize(in, cv::Size(), fx, fy, INTER_LINEAR);

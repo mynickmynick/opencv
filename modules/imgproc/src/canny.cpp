@@ -822,7 +822,7 @@ static bool openvx_canny(const Mat& src, Mat& dst, int loVal, int hiVal, int kSi
 
 void Canny( InputArray _src, OutputArray _dst,
                 double low_thresh, double high_thresh,
-                int aperture_size, bool L2gradient )
+                int aperture_size, bool L2gradient, bool dbg )
 {
     CV_INSTRUMENT_REGION();
 
@@ -927,12 +927,15 @@ void Canny( InputArray _src, OutputArray _dst,
     }
 
     CV_TRACE_REGION_NEXT("finalPass");
-    parallel_for_(Range(0, src.rows), finalPass(map, dst), src.total()/(double)(1<<16));
+    if (dbg)
+        parallel_for_dbg(Range(0, src.rows), finalPass(map, dst), src.total() / (double)(1 << 16));
+    else
+        parallel_for_(Range(0, src.rows), finalPass(map, dst), src.total()/(double)(1<<16));
 }
 
 void Canny( InputArray _dx, InputArray _dy, OutputArray _dst,
                 double low_thresh, double high_thresh,
-                bool L2gradient )
+                bool L2gradient, bool dbg )
 {
     CV_INSTRUMENT_REGION();
 

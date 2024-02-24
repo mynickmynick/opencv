@@ -62,7 +62,7 @@ TEST(S11N, Pipeline_Canny_Bool)
 
     // OpenCV code /////////////////////////////////////////////////////////////
     {
-        cv::Canny(in_mat, out_mat_ocv, thrLow, thrUp, apSize, l2gr);
+        cv::Canny(in_mat, out_mat_ocv, thrLow, thrUp, apSize, l2gr, false);
     }
     // Comparison //////////////////////////////////////////////////////////////
     EXPECT_EQ(0, cvtest::norm(out_mat_gapi, out_mat_ocv, NORM_INF));

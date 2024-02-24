@@ -435,7 +435,7 @@ TEST_P(CannyTest, AccuracyTest)
     c.apply(in_mat1, out_mat_gapi, getCompileArgs());
     // OpenCV code /////////////////////////////////////////////////////////////
     {
-        cv::Canny(in_mat1, out_mat_ocv, thrLow, thrUp, apSize, l2gr);
+        cv::Canny(in_mat1, out_mat_ocv, thrLow, thrUp, apSize, l2gr, false);
     }
     // Comparison //////////////////////////////////////////////////////////////
     {

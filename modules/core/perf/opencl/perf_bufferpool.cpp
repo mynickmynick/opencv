@@ -99,7 +99,7 @@ OCL_PERF_TEST_P(BufferPoolFixture, BufferPool_UMatCanny10, Bool())
         {
             UMat src(sz, CV_8UC1);
             UMat dst;
-            Canny(src, dst, thresh_low, thresh_high, aperture, useL2);
+            Canny(src, dst, thresh_low, thresh_high, aperture, useL2, false);
             dst.getMat(ACCESS_READ); // complete async operations
         }
     }

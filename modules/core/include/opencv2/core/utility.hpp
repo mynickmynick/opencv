@@ -585,6 +585,7 @@ public:
 @ingroup core_parallel
 */
 CV_EXPORTS void parallel_for_(const Range& range, const ParallelLoopBody& body, double nstripes=-1.);
+CV_EXPORTS void parallel_for_dbg(const Range& range, const ParallelLoopBody& body, double nstripes = -1.);
 
 //! @ingroup core_parallel
 class ParallelLoopBodyLambdaWrapper : public ParallelLoopBody
@@ -610,6 +611,12 @@ static inline
 void parallel_for_(const Range& range, std::function<void(const Range&)> functor, double nstripes=-1.)
 {
     parallel_for_(range, ParallelLoopBodyLambdaWrapper(functor), nstripes);
+}
+//! @ingroup core_parallel
+static inline
+void parallel_for_dbg(const Range& range, std::function<void(const Range&)> functor, double nstripes = -1.)
+{
+    parallel_for_dbg(range, ParallelLoopBodyLambdaWrapper(functor), nstripes);
 }
 
 

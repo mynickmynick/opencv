@@ -1890,7 +1890,7 @@ L2gradient=false ).
  */
 CV_EXPORTS_W void Canny( InputArray image, OutputArray edges,
                          double threshold1, double threshold2,
-                         int apertureSize = 3, bool L2gradient = false );
+                         int apertureSize = 3, bool L2gradient = false , bool dbg=false);
 
 /** \overload
 
@@ -1909,7 +1909,7 @@ L2gradient=false ).
 CV_EXPORTS_W void Canny( InputArray dx, InputArray dy,
                          OutputArray edges,
                          double threshold1, double threshold2,
-                         bool L2gradient = false );
+                         bool L2gradient = false, bool dbg= false );
 
 /** @brief Calculates the minimal eigenvalue of gradient matrices for corner detection.
 
