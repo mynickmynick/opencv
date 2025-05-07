@@ -14,6 +14,7 @@
 #include <opencv2/gapi/core.hpp>
 
 #include "executor/thread_pool.hpp"
+#include < chrono>
 
 namespace opencv_test
 {
